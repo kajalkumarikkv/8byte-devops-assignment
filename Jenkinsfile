@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "kajalkumarikkv/8byte-devops-app"
         IMAGE_TAG = "${BUILD_NUMBER}"
+        EC2_HOST = "13.223.98.225"
     }
 
     stages {
@@ -54,12 +55,39 @@ pipeline {
                 }
             }
         }
+
+        stage('Staging Deploy') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} "
+                            docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                            docker rm -f 8byte-staging || true
+                            docker run -d \
+                              --name 8byte-staging \
+                              -p 8082:8081 \
+                              ${IMAGE_NAME}:${IMAGE_TAG}
+                        "
+                    '''
+                }
+            }
+        }
+
+        stage('Staging Test') {
+            steps {
+                sh '''
+                    sleep 5
+                    curl -f http://${EC2_HOST}:8082/health
+                '''
+            }
+        }
     }
 
     post {
         success {
             echo "Pipeline completed successfully."
             echo "Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "Staging deployment successful."
         }
 
         failure {

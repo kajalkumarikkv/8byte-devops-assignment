@@ -73,15 +73,17 @@ pipeline {
             }
         }
 
-        stage('Staging Test') {
-            steps {
-                sh '''
-                    sleep 5
-                    curl -f http://${EC2_HOST}:8082/health
-                '''
-            }
+    stage('Staging Test') {
+       steps {
+        sshagent(credentials: ['ec2-ssh-key']) {
+            sh '''
+                ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} "
+                    curl -f http://localhost:8082/health
+                "
+            '''
         }
     }
+}
 
     post {
         success {

@@ -1,6 +1,7 @@
 resource "aws_instance" "sample" {
   ami           = "ami-07ff62358b87c7116"
   instance_type = var.instance_type
+  key_name      = "kajal-jenkins-key"
 
   subnet_id = var.subnet_id
 

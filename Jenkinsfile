@@ -1,10 +1,11 @@
+```groovy
 pipeline {
     agent any
 
     environment {
         IMAGE_NAME = "kajalkumarikkv/8byte-devops-app"
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        EC2_HOST = "13.223.98.225"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+        EC2_HOST   = "13.223.98.225"
     }
 
     stages {
@@ -26,9 +27,9 @@ pipeline {
             steps {
                 sh '''
                     trivy image \
-                    --severity HIGH,CRITICAL \
-                    --exit-code 0 \
-                    ${IMAGE_NAME}:${IMAGE_TAG}
+                        --severity HIGH,CRITICAL \
+                        --exit-code 0 \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
         }
@@ -44,8 +45,8 @@ pipeline {
                 ]) {
                     sh '''
                         echo "$DOCKER_PASSWORD" | docker login \
-                        -u "$DOCKER_USERNAME" \
-                        --password-stdin
+                            -u "$DOCKER_USERNAME" \
+                            --password-stdin
 
                         docker push ${IMAGE_NAME}:${IMAGE_TAG}
                         docker push ${IMAGE_NAME}:latest
@@ -64,9 +65,9 @@ pipeline {
                             docker pull ${IMAGE_NAME}:${IMAGE_TAG}
                             docker rm -f 8byte-staging || true
                             docker run -d \
-                              --name 8byte-staging \
-                              -p 8082:8081 \
-                              ${IMAGE_NAME}:${IMAGE_TAG}
+                                --name 8byte-staging \
+                                -p 8082:8081 \
+                                ${IMAGE_NAME}:${IMAGE_TAG}
                         "
                     '''
                 }
@@ -84,13 +85,49 @@ pipeline {
                 }
             }
         }
+
+        stage('Production Approval') {
+            steps {
+                input message: 'Staging is successful. Approve production deployment?'
+            }
+        }
+
+        stage('Production Deploy') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} "
+                            docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                            docker rm -f 8byte-production || true
+                            docker run -d \
+                                --name 8byte-production \
+                                -p 8081:8081 \
+                                ${IMAGE_NAME}:${IMAGE_TAG}
+                        "
+                    '''
+                }
+            }
+        }
+
+        stage('Production Test') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} "
+                            curl -f http://localhost:8081/health
+                        "
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
             echo "Pipeline completed successfully."
             echo "Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
-            echo "Staging deployment successful."
+            echo "Staging deployment: SUCCESS"
+            echo "Production deployment: SUCCESS"
         }
 
         failure {
@@ -98,3 +135,4 @@ pipeline {
         }
     }
 }
+```

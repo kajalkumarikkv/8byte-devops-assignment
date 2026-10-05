@@ -4,8 +4,8 @@ pipeline {
 
     environment {
         IMAGE_NAME = "kajalkumarikkv/8byte-devops-app"
-        IMAGE_TAG  = "${BUILD_NUMBER}"
-        EC2_HOST   = "13.223.98.225"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        EC2_HOST = "13.223.98.225"
     }
 
     stages {
@@ -135,4 +135,4 @@ pipeline {
         }
     }
 }
-
+```

@@ -122,15 +122,67 @@ pipeline {
     }
 
     post {
+
         success {
             echo "Pipeline completed successfully."
             echo "Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
             echo "Staging deployment: SUCCESS"
             echo "Production deployment: SUCCESS"
+
+            emailext(
+                subject: "SUCCESS: ${JOB_NAME} #${BUILD_NUMBER}",
+                to: "kajalkumarikkv@gmail.com",
+                body: """
+Hello,
+
+The Jenkins pipeline completed successfully.
+
+Job: ${JOB_NAME}
+Build Number: #${BUILD_NUMBER}
+Status: SUCCESS
+
+Docker Image:
+${IMAGE_NAME}:${IMAGE_TAG}
+
+Staging Deployment: SUCCESS
+Staging Health Check: SUCCESS
+
+Production Deployment: SUCCESS
+Production Health Check: SUCCESS
+
+Jenkins Build:
+${BUILD_URL}
+
+Regards,
+Jenkins
+"""
+            )
         }
 
         failure {
             echo "Pipeline failed. Check the failed stage in Jenkins."
+
+            emailext(
+                subject: "FAILURE: ${JOB_NAME} #${BUILD_NUMBER}",
+                to: "kajalkumarikkv@gmail.com",
+                body: """
+Hello,
+
+The Jenkins pipeline has FAILED.
+
+Job: ${JOB_NAME}
+Build Number: #${BUILD_NUMBER}
+Status: FAILURE
+
+Please check the Jenkins console output.
+
+Jenkins Build:
+${BUILD_URL}
+
+Regards,
+Jenkins
+"""
+            )
         }
     }
 }

@@ -13,5 +13,11 @@ pipeline {
                 sh 'docker build -t 8byte-devops-app:jenkins .'
             }
         }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh 'trivy image --severity HIGH,CRITICAL --exit-code 1 8byte-devops-app:jenkins'
+            }
+        }
     }
 }

@@ -1,0 +1,10 @@
+.git
+.gitignore
+.terraform
+terraform/.terraform
+*.tfstate
+*.tfstate.*
+__pycache__
+*.pyc
+*.pyo
+*.log

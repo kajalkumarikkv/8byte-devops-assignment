@@ -8,6 +8,9 @@ module "ec2" {
   instance_type = var.instance_type
   vpc_id        = module.vpc.vpc_id
   subnet_id     = module.vpc.frontend_subnet_id
+
+  iam_instance_profile = aws_iam_instance_profile.ec2_cloudwatch_profile.name
+
 }
 
 

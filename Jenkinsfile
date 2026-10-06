@@ -55,7 +55,86 @@ pipeline {
                 }
             }
         }
+stage('Configure CloudWatch Agent') {
+    steps {
+        sshagent(credentials: ['ec2-ssh-key']) {
+            sh '''
+                ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} << 'EOF'
 
+                sudo dnf install -y amazon-cloudwatch-agent
+
+                sudo mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
+
+                sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null << 'CONFIG'
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": [
+          "used_percent"
+        ],
+        "resources": [
+          "/"
+        ],
+        "metrics_collection_interval": 60
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "/8byte/ec2/system",
+            "log_stream_name": "{instance_id}"
+          },
+          {
+            "file_path": "/var/log/nginx/access.log",
+            "log_group_name": "/8byte/ec2/nginx-access",
+            "log_stream_name": "{instance_id}"
+          },
+          {
+            "file_path": "/var/log/nginx/error.log",
+            "log_group_name": "/8byte/ec2/nginx-error",
+            "log_stream_name": "{instance_id}"
+          }
+        ]
+      }
+    }
+  }
+}
+CONFIG
+
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+                  -a fetch-config \
+                  -m ec2 \
+                  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+                  -s
+
+                sudo systemctl enable amazon-cloudwatch-agent
+                sudo systemctl restart amazon-cloudwatch-agent
+
+                sudo systemctl status amazon-cloudwatch-agent --no-pager
+
+                EOF
+            '''
+        }
+    }
+}
         stage('Staging Deploy') {
             steps {
                 sshagent(credentials: ['ec2-ssh-key']) {

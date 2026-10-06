@@ -3,6 +3,8 @@ resource "aws_instance" "sample" {
   instance_type = var.instance_type
   key_name      = "kajal-jenkins-key"
 
+  iam_instance_profile = var.iam_instance_profile
+
   subnet_id = var.subnet_id
 
   vpc_security_group_ids = [

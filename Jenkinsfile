@@ -1,3 +1,4 @@
+```groovy
 pipeline {
     agent any
 
@@ -55,17 +56,18 @@ pipeline {
                 }
             }
         }
-stage('Configure CloudWatch Agent') {
-    steps {
-        sshagent(credentials: ['ec2-ssh-key']) {
-            sh '''
-                ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} << 'EOF'
 
-                sudo dnf install -y amazon-cloudwatch-agent
+        stage('Configure CloudWatch Agent') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} << 'EOF'
 
-                sudo mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
+sudo dnf install -y amazon-cloudwatch-agent
 
-                sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null << 'CONFIG'
+sudo mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
+
+sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null << 'CONFIG'
 {
   "agent": {
     "metrics_collection_interval": 60,
@@ -119,22 +121,23 @@ stage('Configure CloudWatch Agent') {
 }
 CONFIG
 
-                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-                  -a fetch-config \
-                  -m ec2 \
-                  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
-                  -s
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+  -s
 
-                sudo systemctl enable amazon-cloudwatch-agent
-                sudo systemctl restart amazon-cloudwatch-agent
+sudo systemctl enable amazon-cloudwatch-agent
+sudo systemctl restart amazon-cloudwatch-agent
 
-                sudo systemctl status amazon-cloudwatch-agent --no-pager
+sudo systemctl status amazon-cloudwatch-agent --no-pager
 
-                EOF
-            '''
+EOF
+                    '''
+                }
+            }
         }
-    }
-}
+
         stage('Staging Deploy') {
             steps {
                 sshagent(credentials: ['ec2-ssh-key']) {
@@ -265,3 +268,4 @@ Jenkins
         }
     }
 }
+```
